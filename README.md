@@ -101,7 +101,7 @@ Then restart Home Assistant.
 
 ### Step 1: Import Blueprint
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=YOUR_BLUEPRINT_URL_HERE)
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=[YOUR_BLUEPRINT_URL_HERE](https://raw.githubusercontent.com/pini72/HA-whatsapp-bot/refs/heads/main/green_api_whatsapp_conversation.yaml?token=GHSAT0AAAAAADTQMYOU7KG3UEOZB7DWAIHA2LNLBLQ))
 
 Or manually:
 1. Go to Settings > Automations & Scenes > Blueprints
