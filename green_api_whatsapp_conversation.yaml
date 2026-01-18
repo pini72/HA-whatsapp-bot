@@ -1,0 +1,195 @@
+blueprint:
+  name: Green API WhatsApp Conversation
+  description: |
+    Receives WhatsApp messages via Green API webhook, processes them 
+    with conversation.process, and sends responses back via Green API.
+    
+    REQUIREMENTS:
+    - External access to Home Assistant (Nabu Casa, DuckDNS, or custom domain with SSL)
+    - Green API account with active instance
+    - REST command configured in configuration.yaml
+    
+    Features:
+    - Authorized phone numbers verification
+    - Message processing with Assist/Conversation
+    - Automatic response sending
+    - Daily conversation context reset per user
+  domain: automation
+  input:
+    webhook_id:
+      name: Webhook ID
+      description: |
+        Unique identifier for the webhook (without /api/webhook/ prefix).
+        Use random characters for better security.
+        Example: GSAhFI5ZwxvcXrvtHbs
+        
+        IMPORTANT: Requires external access to Home Assistant (Nabu Casa, DuckDNS, or custom domain).
+      selector:
+        text:
+    
+    id_instance:
+      name: ID Instance
+      description: Your Green API Instance ID
+      selector:
+        text:
+    
+    api_token_instance:
+      name: API Token Instance
+      description: Your Green API Instance Token
+      selector:
+        text:
+    
+    allowed_numbers:
+      name: Allowed Phone Numbers
+      description: |
+        List of authorized phone numbers.
+        Enter numbers only (digits), including country code.
+        Example: 972555555555
+        Enter one number per line.
+      selector:
+        text:
+          multiline: true
+    
+    conversation_agent:
+      name: Conversation Agent
+      description: |
+        Select the conversation agent to use.
+        Default: Home Assistant
+      default: "conversation.home_assistant"
+      selector:
+        conversation_agent:
+
+trigger:
+  - platform: webhook
+    webhook_id: !input webhook_id
+    allowed_methods:
+      - POST
+    local_only: false
+
+variables:
+  input_allowed_numbers: !input allowed_numbers
+
+condition:
+  - condition: template
+    value_template: >-
+      {% if trigger.json is defined and 
+         trigger.json.senderData is defined and 
+         trigger.json.senderData.sender is defined %}
+        {% set allowed = input_allowed_numbers.split('\n') | map('trim') | select('ne', '') | list %}
+        {% set sender = trigger.json.senderData.sender | replace('@c.us', '') %}
+        {{ sender in allowed }}
+      {% else %}
+        {{ false }}
+      {% endif %}
+  - condition: template
+    value_template: >-
+      {{ trigger.json.messageData is defined and
+         trigger.json.messageData.textMessageData is defined and
+         trigger.json.messageData.textMessageData.textMessage is defined and
+         trigger.json.messageData.textMessageData.textMessage | length > 0 }}
+
+action:
+  - variables:
+      sender_number: >-
+        {{ trigger.json.senderData.sender | replace('@c.us', '') if trigger.json.senderData.sender is defined else 'unknown' }}
+      sender_name: >-
+        {{ trigger.json.senderData.senderName if trigger.json.senderData.senderName is defined else 'Unknown' }}
+      chat_id: >-
+        {{ trigger.json.senderData.chatId if trigger.json.senderData.chatId is defined else '' }}
+      message_text: >-
+        {{ trigger.json.messageData.textMessageData.textMessage if trigger.json.messageData.textMessageData.textMessage is defined else '' }}
+      id_instance: !input id_instance
+      api_url: >-
+        https://{{ id_instance[:4] }}.api.greenapi.com
+      api_token: !input api_token_instance
+      conversation_agent: !input conversation_agent
+      conversation_id: >-
+        {{ now().strftime('%Y%m%d') }}_{{ sender_number | string | md5 | truncate(8, True, '') }}
+  
+  - alias: "Log - Message Received"
+    service: system_log.write
+    data:
+      message: >-
+        WhatsApp message received from {{ sender_name }} ({{ sender_number }}): {{ message_text }}
+        Agent: {{ conversation_agent }}
+        Conversation ID: {{ conversation_id }}
+      level: info
+  
+  - alias: "Process Message with Conversation"
+    service: conversation.process
+    data:
+      agent_id: >-
+        {% if '.' in conversation_agent %}
+          {{ conversation_agent }}
+        {% else %}
+          conversation.{{ conversation_agent }}
+        {% endif %}
+      text: "{{ message_text }}"
+      conversation_id: "{{ conversation_id }}"
+    response_variable: conversation_response
+  
+  - alias: "Log - Response Generated"
+    service: system_log.write
+    data:
+      message: >-
+        Conversation response: {{ conversation_response.response.speech.plain.speech if conversation_response.response.speech.plain.speech is defined else 'ERROR: No response received' }}
+      level: info
+  
+  - alias: "Check Response Type and Prepare Message"
+    variables:
+      is_error: >-
+        {{ conversation_response.response.response_type == 'error' if conversation_response.response.response_type is defined else false }}
+      final_message: >-
+        {% if conversation_response.response.response_type is defined and conversation_response.response.response_type == 'error' %}
+          {% if 'quota' in conversation_response.response.speech.plain.speech | lower or '429' in conversation_response.response.speech.plain.speech %}
+            Sorry, the AI service quota has been exceeded. Please try again later. 🙏
+          {% elif 'timeout' in conversation_response.response.speech.plain.speech | lower %}
+            Sorry, the request timed out. Please try again. ⏱️
+          {% else %}
+            Sorry, there was an error processing your request. Please try again later. ❌
+          {% endif %}
+        {% else %}
+          {{ conversation_response.response.speech.plain.speech }}
+        {% endif %}
+  
+  - condition: template
+    value_template: >-
+      {{ final_message is defined and final_message | length > 0 }}
+    alias: "Check if message exists"
+  
+  - alias: "Debug - Log Send Details"
+    service: system_log.write
+    data:
+      message: >-
+        Preparing to send WhatsApp message:
+        API URL: {{ api_url }}
+        Instance ID: {{ id_instance }}
+        Chat ID: {{ chat_id }}
+        Message length: {{ final_message | length }} chars
+        Is Error: {{ is_error }}
+        Full URL: {{ api_url }}/waInstance{{ id_instance }}/sendMessage/{{ api_token[:10] }}...
+      level: warning
+  
+  - alias: "Send Response to WhatsApp"
+    service: rest_command.green_api_send_message
+    data:
+      api_url: "{{ api_url }}"
+      id_instance: "{{ id_instance | string }}"
+      api_token: "{{ api_token }}"
+      chat_id: "{{ chat_id }}"
+      message: "{{ final_message }}"
+    continue_on_error: true
+  
+  - alias: "Debug - Message Sent"
+    service: system_log.write
+    data:
+      message: "WhatsApp message sent successfully to {{ chat_id }}"
+      level: warning
+  
+  - alias: "Short Delay"
+    delay:
+      milliseconds: 500
+
+mode: queued
+max: 10
+max_exceeded: warning
