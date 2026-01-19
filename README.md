@@ -1,82 +1,55 @@
 # Green API WhatsApp Conversation Blueprint for Home Assistant
 
-A complete Home Assistant blueprint that enables WhatsApp integration through Green API, allowing you to control your smart home and interact with Home Assistant's Conversation/Assist via WhatsApp messages.
+Control your Home Assistant via WhatsApp! This blueprint integrates Green API to receive WhatsApp messages, process them with any conversation agent (Google Gemini, OpenAI, Claude, etc.), and send smart replies back.
 
 ## Features
 
 ✅ **Webhook Integration** - Receives WhatsApp messages via Green API webhooks  
 ✅ **Authorized Numbers** - Only specified phone numbers can interact with the bot  
 ✅ **Conversation Context** - Maintains conversation history throughout the day (resets daily)  
-✅ **Automatic Language Detection** - Responds in the same language as the message (Hebrew, English, etc.)  
-✅ **Any Conversation Agent** - Works with Home Assistant, Google Gemini, OpenAI, Anthropic Claude, etc.  
-✅ **Automatic Responses** - Sends replies back to WhatsApp automatically  
-✅ **Queue Mode** - Handles up to 10 simultaneous messages  
-✅ **Detailed Logging** - Comprehensive logging for debugging  
+✅ **Automatic Language Detection** - Responds in the same language as the message  
+✅ **Any Conversation Agent** - Works with Home Assistant, Google Gemini, OpenAI, Claude, etc.  
+✅ **Queue Mode** - Handles up to 10 simultaneous messages
 
 ## Requirements
 
-### 1. Green API Account
-- Sign up at [green-api.com](https://green-api.com)
-- Get your `idInstance` and `apiTokenInstance`
-- Set up webhook URL in Green API dashboard
+### 1. Configure Assist in Home Assistant
 
-### 2. Home Assistant
-- Home Assistant 2023.8 or newer
-- **External access (REQUIRED for webhooks):**
-  - ✅ **Nabu Casa Cloud** (easiest, recommended - $6.50/month)
-  - ✅ **DuckDNS** with Let's Encrypt SSL (free)
-  - ✅ **Cloudflare Tunnel** (requires domain purchase, ~$10-15/year)
-  - ✅ **Custom domain** with valid SSL certificate
-  - ❌ **Local network only** will NOT work (no port 19283 or local IP)
+Set up a conversation agent (AI) to process messages:
 
-<details>
-<summary><b>📖 What is "External Access"?</b></summary>
+**Recommended: Google Gemini (Free & Good)**
+1. Follow the setup guide: [Google Generative AI Conversation Integration](https://www.home-assistant.io/integrations/google_generative_ai_conversation/)
+2. After adding the integration, go to **Settings > Voice Assistants**
+3. Select your Gemini agent as default
+4. Configure the language you want
 
-External access means your Home Assistant is reachable from the internet with a public HTTPS URL.
+**Other Options:**
+- Home Assistant's built-in agent (English only)
+- OpenAI ChatGPT
+- Anthropic Claude
+- Any other conversation agent
 
-**Options:**
+### 2. Dedicated WhatsApp Account
 
-1. **Nabu Casa Cloud** ($6.50/month)
-   - Easiest setup - works in 2 minutes
-   - No port forwarding, no configuration
-   - URL: `https://abcdef123456.ui.nabu.casa`
-   - ✅ Recommended for beginners
+⚠️ **Important:** Your personal WhatsApp account won't work!
 
-2. **DuckDNS** (Free)
-   - Free dynamic DNS service
-   - Requires port forwarding on router
-   - Requires Let's Encrypt SSL setup
-   - URL: `https://yourdomain.duckdns.org`
-   - ⚙️ Requires technical knowledge
+**Why:** Green API free tier limits you to **3 chats per month**. The first 3 chats that send messages are locked for the entire month - no way to change them.
 
-3. **Cloudflare Tunnel** (~$10-15/year for domain)
-   - Secure tunnel to your HA via Cloudflare
-   - No port forwarding needed!
-   - Works behind CGNAT
-   - Requires purchasing a domain (~$10-15/year)
-   - Cloudflare Tunnel itself is free
-   - URL: `https://yourdomain.com` (your own domain)
-   - ⚙️ Requires Cloudflare account and domain
+**Solution:** Create a dedicated WhatsApp account:
+1. Download **WhatsApp Business** (separate app)
+2. Register with a different phone number
+3. Use this account exclusively for the bot
 
-4. **Custom Domain**
-   - Use your own domain (e.g., `home.yourdomain.com`)
-   - Requires domain, port forwarding, and SSL certificate
-   - Most flexible but most complex
-   - ⚙️ Requires advanced technical knowledge
+### 3. Green API Account
 
-**Why is this needed?**
-Green API needs to send webhooks (HTTP requests) to your Home Assistant when you receive WhatsApp messages. Without external access, Green API cannot reach your Home Assistant.
+1. Sign up at [green-api.com](https://green-api.com)
+2. Create an instance
+3. Get your **Instance ID** and **API Token**
+4. Free tier: 3 chats/month, 1000 messages/month
 
-**Local URLs that DON'T work:**
-- ❌ `http://192.168.1.100:8123`
-- ❌ `http://homeassistant.local:8123`
-- ❌ `http://localhost:8123`
+### 4. REST Command Configuration
 
-These only work on your local network, not from the internet.
-</details>
-
-### 3. REST Command Configuration
-Add to your `configuration.yaml`:
+Add this to your `configuration.yaml`:
 
 ```yaml
 rest_command:
@@ -95,100 +68,111 @@ rest_command:
     verify_ssl: true
 ```
 
-Then restart Home Assistant.
+Then **restart Home Assistant**.
+
+### 5. External Access to Home Assistant
+
+You need a public HTTPS URL for webhooks to work.
+
+**Options:**
+- ✅ **Nabu Casa Cloud** - Easiest ($6.50/month)
+- ✅ **DuckDNS** - Free (requires port forwarding + SSL setup)
+- ✅ **Cloudflare Tunnel** - Requires domain (~$10-15/year)
+
+**Firewall/Security Layer:**
+
+If you use additional security (firewall, reverse proxy, etc.), whitelist these Green API IPs:
+```
+46.101.109.139
+51.250.12.167
+51.250.84.44
+51.250.95.149
+89.169.137.216
+158.160.49.84
+165.22.93.202
+167.172.162.71
+104.248.252.93
+158.160.139.176
+64.226.111.11
+207.154.255.195
+```
 
 ## Installation
 
 ### Step 1: Import Blueprint
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/pini72/HA-whatsapp-bot/main/green_api_whatsapp_conversation.yaml)
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/pini72/HA-whatsapp-bot/main/green_api_whatsapp_conversation.yaml)
 
 Or manually:
-1. Go to Settings > Automations & Scenes > Blueprints
-2. Click "Import Blueprint"
-3. Paste the blueprint URL or upload the file
+1. Go to **Settings > Automations & Scenes > Blueprints**
+2. Click **"Import Blueprint"**
+3. Paste the blueprint URL
 
-### Step 2: Create Automation and Choose Webhook ID
+### Step 2: Create Automation
 
-1. Settings > Automations & Scenes
-2. Create Automation > Create new automation from blueprint
-3. Select "Green API WhatsApp Conversation"
+1. **Settings > Automations & Scenes**
+2. Click **"Create Automation"** > **"Create new automation from blueprint"**
+3. Select **"Green API WhatsApp Conversation"**
 
-4. **Create a Webhook ID** - Enter a unique, random identifier:
-   
-   **Example:** `GSAhFI5ZwxvcXrvtHbs`
-   
-   💡 **Tip:** Use a password generator or random characters (8-20 characters recommended)
+### Step 3: Configure Blueprint
 
-5. Note down this webhook ID for the next step
-6. Configure the other fields (see Step 4)
-7. **Don't save yet!** First configure Green API (Step 3)
-
-### Step 3: Configure Green API Webhook
-
-Now configure the webhook in Green API using the ID from Step 2:
-
-1. Log in to [Green API Console](https://console.green-api.com)
-2. Select your instance
-3. Go to Settings > Webhooks
-4. Set Webhook URL using your Home Assistant URL and the webhook ID you chose:
-   
-   **Example:**
-   ```
-   https://abcdef123456.ui.nabu.casa/api/webhook/GSAhFI5ZwxvcXrvtHbs
-   ```
-   
-   **YOUR_HA_URL options:**
-   - **Nabu Casa:** `https://abcdef123456.ui.nabu.casa` (easiest)
-   - **DuckDNS:** `https://yourdomain.duckdns.org`
-   - **Cloudflare Tunnel:** `https://yourdomain.com` (your custom domain)
-   - **Custom domain:** Your own domain with valid SSL
-   
-   ⚠️ **IMPORTANT:** You MUST have external access to Home Assistant for webhooks to work!
-   Local URLs like `http://192.168.1.100:8123` will NOT work.
-   
-5. Enable: `incomingMessageReceived`
-6. Save settings
-
-### Step 4: Complete Automation Setup
-
-Return to Home Assistant and complete the configuration:
-
-#### Configuration Fields:
+Fill in the following fields:
 
 **Webhook ID:**
-- Enter a unique, random identifier
+- Enter a unique random ID
 - Example: `GSAhFI5ZwxvcXrvtHbs`
-- **Important:** Must match what you configured in Green API (Step 3)
-- Use a password generator for random characters
+- 💡 Use a password generator for security
+- **Remember this ID** - you'll need it in Step 4
 
 **ID Instance:**
+- Your Green API Instance ID
 - Example: `7103128030`
 - Find in Green API dashboard
-- **Note:** The API URL is automatically constructed from the first 4 digits (e.g., `https://7103.api.greenapi.com`)
 
 **API Token Instance:**
-- Your instance API token
+- Your Green API Instance Token
 - Find in Green API dashboard
 
 **Allowed Phone Numbers:**
-- Enter phone numbers only (digits), including country code
-- No spaces, no dashes, no plus sign (+)
+- Enter phone numbers (digits only, with country code)
+- No spaces, dashes, or + sign
 - Example: `972555555555`
 - One number per line
-- Multiple numbers example:
-  ```
-  972555555555
-  972501234567
-  972521234567
-  ```
+- ⚠️ **Free tier limit: 3 numbers maximum**
 
 **Conversation Agent:**
-- Select from dropdown
-- Options: Home Assistant, Google Gemini, OpenAI, etc.
-- Default: Home Assistant
+- Select the agent you configured in Step 1
+- Example: `Google Generative AI Conversation`
 
-**Note:** The bot will automatically detect and respond in the same language as the message received. No manual language configuration needed.
+**Save the automation!** ✅
+
+### Step 4: Configure Green API Webhook
+
+Now configure the webhook in Green API:
+
+1. Log in to [Green API Console](https://console.green-api.com)
+2. Select your instance
+3. Go to **Settings > Webhooks**
+4. Set **Webhook URL** by combining these 3 parts:
+
+```
+[Your HA External URL] + /api/webhook/ + [Webhook ID from Step 3]
+```
+
+**Example:**
+```
+https://abcdef123456.ui.nabu.casa/api/webhook/GSAhFI5ZwxvcXrvtHbs
+```
+
+**URL Structure:**
+- `https://abcdef123456.ui.nabu.casa` ← Your external Home Assistant URL
+- `/api/webhook/` ← Fixed path (don't change)
+- `GSAhFI5ZwxvcXrvtHbs` ← The Webhook ID you created in Step 3
+
+5. Enable: **incomingMessageReceived**
+6. Click **Save**
+
+✅ **Done! Send a WhatsApp message to test!**
 
 ## Usage
 
@@ -283,7 +267,7 @@ Search: "WhatsApp message received"
 
 **Verify webhook:**
 ```bash
-curl -X POST https://YOUR_HA_URL/api/webhook/green_api_whatsapp \
+curl -X POST https://YOUR_HA_URL/api/webhook/YOUR_WEBHOOK_ID \
   -H "Content-Type: application/json" \
   -d '{"typeWebhook":"incomingMessageReceived","senderData":{"sender":"972501234567@c.us"},"messageData":{"typeMessage":"textMessage","textMessageData":{"textMessage":"test"}}}'
 ```
@@ -310,7 +294,7 @@ Verify:
 ```yaml
 service: rest_command.green_api_send_message
 data:
-  api_url: "https://7103.api.greenapi.com"  # First 4 digits of your instance ID
+  api_url: "https://7103.api.greenapi.com"
   id_instance: "YOUR_ID"
   api_token: "YOUR_TOKEN"
   chat_id: "972501234567@c.us"
@@ -411,13 +395,7 @@ WhatsApp message sent successfully to 972501234567@c.us
 ## FAQ
 
 ### Q: What languages are supported?
-**A:** All languages! The bot automatically detects the language of your message and responds in the same language. Works best with Google Gemini, OpenAI, or Claude agents.
-
-### Q: Can I force a specific language?
-**A:** The bot responds in the language you use. If you want to force a language, you can add a note in your message like "please respond in English" or just write in that language.
-
-### Q: Does this work with Home Assistant's default agent?
-**A:** Yes, but the default Home Assistant agent primarily responds in English. For best multilingual support, use Google Gemini, OpenAI, or Claude.
+**A:** All languages! The bot automatically detects the language of your message and responds in the same language.
 
 ### Q: Can I use this with multiple Green API instances?
 **A:** Yes, create separate automations for each instance with different webhook IDs.
@@ -426,13 +404,13 @@ WhatsApp message sent successfully to 972501234567@c.us
 **A:** Yes, but you'll need to authorize the group ID instead of individual numbers.
 
 ### Q: How much does Green API cost?
-**A:** Check [Green API pricing](https://green-api.com/pricing.html). They offer free tier and paid plans.
+**A:** Check [Green API pricing](https://green-api.com/pricing.html). They offer free tier (3 chats/month) and paid plans.
 
 ### Q: Can I customize the bot's responses?
 **A:** Yes, through your Conversation Agent's configuration (e.g., system prompts in Google Gemini).
 
 ### Q: What's the message rate limit?
-**A:** Depends on Green API plan. Check your plan details.
+**A:** Depends on Green API plan. Free tier: 1000 messages/month.
 
 ### Q: Can I send images or files?
 **A:** This blueprint handles text only. Green API supports media, but requires code modifications.
@@ -463,7 +441,8 @@ This blueprint is provided as-is under MIT License.
 
 ## Changelog
 
-### v1.0.0 (2026-01-16)
+### v1.0.0 (2026-01-19)
+
 - Initial release
 - Basic WhatsApp integration
 - Conversation context support
