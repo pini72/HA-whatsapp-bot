@@ -126,7 +126,7 @@ Fill in the following fields:
 
 **ID Instance:**
 - Your Green API Instance ID
-- Example: `7103128030`
+- Example: `7103136020`
 - Find in Green API dashboard
 
 **API Token Instance:**
