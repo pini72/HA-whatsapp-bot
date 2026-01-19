@@ -22,6 +22,10 @@ Set up a conversation agent (AI) to process messages:
 2. After adding the integration, go to **Settings > Voice Assistants**
 3. Select your Gemini agent as default
 4. Configure the language you want
+5. **Important:** Go to **Settings > Voice Assistants > Expose** tab
+   - Select which entities the assistant can control
+   - Only exposed entities will be visible to the bot
+   - Example: lights, switches, climate, etc.
 
 **Other Options:**
 - Home Assistant's built-in agent (English only)
