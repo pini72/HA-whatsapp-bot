@@ -169,7 +169,7 @@ https://abcdef123456.ui.nabu.casa/api/webhook/GSAhFI5ZwxvcXrvtHbs
 - `/api/webhook/` ← Fixed path (don't change)
 - `GSAhFI5ZwxvcXrvtHbs` ← The Webhook ID you created in Step 3
 
-5. Enable: **incomingMessageReceived**
+5. Enable: **Receive webhooks on incoming messages and files**
 6. Click **Save**
 
 ✅ **Done! Send a WhatsApp message to test!**
